@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>VectorDB — HNSW + RAG</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <header>
+    <h1>Vector Database + RAG Engine</h1>
+    <span class="badge hl">HNSW</span>
+    <span class="badge">KD-TREE</span>
+    <span class="badge">BRUTE FORCE</span>
+    <span class="badge" id="ollamaBadge">OLLAMA…</span>
+    <span id="statsLabel">loading…</span>
+  </header>
+
+  <div class="layout">
+
+    <!-- ══ LEFT PANEL ══ -->
+    <div class="left-panel">
+      <div>
+        <div class="sec">Query (Demo Vectors)</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <input type="text" id="qInput" placeholder="binary tree, sushi, basketball…" />
+          <button class="btn-p" onclick="runSearch()">⚡ SEARCH</button>
+        </div>
+      </div>
+      <div>
+        <div class="sec">Algorithm</div>
+        <div class="algo-row">
+          <div class="algo-btn on" data-algo="hnsw" onclick="setAlgo(this)">HNSW</div>
+          <div class="algo-btn" data-algo="kdtree" onclick="setAlgo(this)">KD-TREE</div>
+          <div class="algo-btn" data-algo="bruteforce" onclick="setAlgo(this)">BRUTE</div>
+        </div>
+      </div>
+      <div>
+        <div class="sec">Distance Metric</div>
+        <select id="metric">
+          <option value="cosine">Cosine Similarity</option>
+          <option value="euclidean">Euclidean Distance</option>
+          <option value="manhattan">Manhattan Distance</option>
+        </select>
+      </div>
+      <div>
+        <div class="sec">Top-K: <span id="kLabel">5</span></div>
+        <input type="range" id="kSlider" min="1" max="10" value="5"
+          oninput="document.getElementById('kLabel').textContent=this.value">
+      </div>
+      <div>
+        <div class="sec">Category Legend</div>
+        <div class="legend">
+          <div class="leg-row">
+            <div class="dot" style="background:var(--cs);box-shadow:0 0 5px var(--cs)"></div>CS / Algorithms
+          </div>
+          <div class="leg-row">
+            <div class="dot" style="background:var(--math);box-shadow:0 0 5px var(--math)"></div>Mathematics
+          </div>
+          <div class="leg-row">
+            <div class="dot" style="background:var(--food);box-shadow:0 0 5px var(--food)"></div>Food &amp; Cooking
+          </div>
+          <div class="leg-row">
+            <div class="dot" style="background:var(--sports);box-shadow:0 0 5px var(--sports)"></div>Sports &amp; Games
+          </div>
+          <div class="leg-row">
+            <div class="dot" style="background:var(--green);box-shadow:0 0 5px var(--green)"></div>Documents (RAG)
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="sec">Insert Demo Vector</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <input type="text" id="addMeta" placeholder="Description…" />
+          <select id="addCat">
+            <option value="cs">CS / Algorithms</option>
+            <option value="math">Mathematics</option>
+            <option value="food">Food &amp; Cooking</option>
+            <option value="sports">Sports &amp; Games</option>
+          </select>
+          <button class="btn-s" onclick="addVector()">+ INSERT</button>
+        </div>
+      </div>
+      <div>
+        <div class="sec">Benchmark</div>
+        <button class="btn-s" onclick="runBenchmark()">▶ COMPARE ALL ALGOS</button>
+      </div>
+    </div>
+
+    <!-- ══ CENTER: SCATTER PLOT ══ -->
+    <div class="center-panel"><canvas id="scatter"></canvas></div>
+
+    <!-- ══ RIGHT PANEL: TABS ══ -->
+    <div class="right-panel">
+      <div class="tabs">
+        <div class="tab on" onclick="switchTab('search')">SEARCH</div>
+        <div class="tab" onclick="switchTab('docs')">DOCUMENTS</div>
+        <div class="tab" onclick="switchTab('rag')">ASK AI</div>
+      </div>
+
+      <!-- TAB: SEARCH -->
+      <div class="tab-content on" id="tab-search">
+        <div>
+          <div class="sec">Search Latency</div>
+          <div class="lat-big" id="latBig">—</div>
+          <div class="lat-sub" id="latSub">No query yet</div>
+        </div>
+        <div>
+          <div class="sec">Top Matches</div>
+          <div class="results" id="results">
+            <div style="color:var(--muted);font-size:11px">Run a search to see results…</div>
+          </div>
+        </div>
+        <div>
+          <div class="sec">Query Embedding (16D)</div>
+          <canvas id="vecCvs" height="76"></canvas>
+        </div>
+        <div id="benchSec" style="display:none">
+          <div class="sec">Algorithm Comparison</div>
+          <div class="bench" id="benchBars"></div>
+        </div>
+        <div>
+          <div class="sec">HNSW Graph Layers</div>
+          <div class="layers" id="layers">
+            <div style="color:var(--muted);font-size:11px">Loading…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: DOCUMENTS -->
+      <div class="tab-content" id="tab-docs">
+        <div>
+          <div class="sec">Ollama Status</div>
+          <div class="ollama-status" id="ollamaStatus">Checking…</div>
+        </div>
+        <div>
+          <div class="sec">Insert Document</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <input type="text" id="docTitle" placeholder="Document title / topic…" />
+            <textarea id="docText"
+              placeholder="Paste your notes, textbook excerpt, lecture content…&#10;&#10;Long text is automatically split into overlapping chunks and each chunk gets its own real embedding via Ollama's nomic-embed-text model."></textarea>
+            <button class="btn-g" id="insertDocBtn" onclick="insertDocument()">⚡ EMBED &amp; INSERT</button>
+            <div id="insertStatus" style="font-size:11px;color:var(--muted)"></div>
+          </div>
+        </div>
+        <div>
+          <div class="sec">Stored Documents (<span id="docCountLabel">0</span>)</div>
+          <div class="doc-list" id="docList">
+            <div style="color:var(--muted);font-size:11px">No documents yet. Insert some above.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: ASK AI (RAG) -->
+      <div class="tab-content" id="tab-rag">
+        <div>
+          <div class="sec">Ask a Question</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <textarea id="ragQuestion" rows="3"
+              placeholder="What is dynamic programming?&#10;Explain the main idea of HNSW.&#10;How does the recipe differ from…"></textarea>
+            <div style="display:flex;gap:6px">
+              <select id="ragK" style="width:auto;flex-shrink:0">
+                <option value="2">Top 2</option>
+                <option value="3" selected>Top 3</option>
+                <option value="5">Top 5</option>
+              </select>
+              <button class="btn-g" id="askBtn" onclick="askAI()" style="flex:1">🤖 ASK AI</button>
+            </div>
+            <div style="font-size:10px;color:var(--muted)">Uses your inserted documents as context. Answers come from
+              the local LLM.</div>
+          </div>
+        </div>
+        <div>
+          <div class="sec">Conversation</div>
+          <div class="chat-history" id="chatHistory">
+            <div style="color:var(--muted);font-size:11px">Ask a question about your inserted documents…</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end right-panel -->
+  </div><!-- end layout -->
+
+  <div id="tip"></div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
