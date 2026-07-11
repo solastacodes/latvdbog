@@ -676,7 +676,7 @@ inline from_chars_result<T> from_chars(const char *first, const char *last,
   return {p, std::errc{}};
 }
 
-// from_chars for double (simple wrapper for strtod)
+// from_chars for double (simple  for strtod)
 inline from_chars_result<double> from_chars(const char *first, const char *last,
                                             double &value) {
   std::string s(first, last);
@@ -1222,7 +1222,7 @@ struct TlsError {
   static std::string verify_error_to_string(long error_code);
 };
 
-// RAII wrapper for peer certificate
+// RAII for peer certificate
 class PeerCert {
 public:
   PeerCert();
@@ -3264,7 +3264,7 @@ bool is_field_value(const std::string &s);
 namespace tls {
 namespace impl {
 
-// Mbed TLS context wrapper (holds config, entropy, DRBG, CA chain, own
+// Mbed TLS context  (holds config, entropy, DRBG, CA chain, own
 // cert/key). This struct is accessible via tls::impl for use in SSL context
 // setup callbacks (cast ctx_t to tls::impl::MbedTlsContext*).
 struct MbedTlsContext {
@@ -3293,7 +3293,7 @@ struct MbedTlsContext {
 namespace tls {
 namespace impl {
 
-// wolfSSL context wrapper (holds WOLFSSL_CTX and related state).
+// wolfSSL context  (holds WOLFSSL_CTX and related state).
 // This struct is accessible via tls::impl for use in SSL context
 // setup callbacks (cast ctx_t to tls::impl::WolfSSLContext*).
 struct WolfSSLContext {
@@ -5468,7 +5468,7 @@ inline ssize_t send_socket(socket_t sock, const void *ptr, size_t size,
   });
 }
 
-inline int poll_wrapper(struct pollfd *fds, nfds_t nfds, int timeout) {
+inline int poll_wra(struct pollfd *fds, nfds_t nfds, int timeout) {
 #ifdef _WIN32
   return ::WSAPoll(fds, nfds, timeout);
 #else
@@ -5485,7 +5485,7 @@ inline ssize_t select_impl(socket_t sock, short events, time_t sec,
 
   auto timeout = static_cast<int>(sec * 1000 + usec / 1000);
 
-  return handle_EINTR([&]() { return poll_wrapper(&pfd, 1, timeout); });
+  return handle_EINTR([&]() { return poll_wra(&pfd, 1, timeout); });
 }
 
 inline ssize_t select_read(socket_t sock, time_t sec, time_t usec) {
@@ -5506,7 +5506,7 @@ inline Error wait_until_socket_is_ready(socket_t sock, time_t sec,
   auto timeout = static_cast<int>(sec * 1000 + usec / 1000);
 
   auto poll_res =
-      handle_EINTR([&]() { return poll_wrapper(&pfd_read, 1, timeout); });
+      handle_EINTR([&]() { return poll_wra(&pfd_read, 1, timeout); });
 
   if (poll_res == 0) { return Error::ConnectionTimeout; }
 
@@ -7280,7 +7280,7 @@ bool read_content(Stream &strm, T &x, size_t payload_max_length, int &status,
       exceed_payload_max_length, [&](const ContentReceiverWithProgress &out) {
         auto ret = true;
         // Note: exceed_payload_max_length may also be set by the decompressor
-        // wrapper in prepare_content_receiver when the decompressed payload
+        //  in prepare_content_receiver when the decompressed payload
         // size exceeds the limit.
 
         if (is_chunked_transfer_encoding(x.headers)) {
@@ -8397,7 +8397,7 @@ inline bool range_error(Request &req, Response &res) {
         res.content_length_ ? res.content_length_ : res.body.size());
 
     std::vector<std::pair<ssize_t, ssize_t>> processed_ranges;
-    size_t overwrapping_count = 0;
+    size_t overping_count = 0;
 
     // NOTE: The following Range check is based on '14.2. Range' in RFC 9110
     // 'HTTP Semantics' to avoid potential denial-of-service attacks.
@@ -17327,7 +17327,7 @@ namespace tls {
 
 namespace impl {
 
-// Mbed TLS session wrapper
+// Mbed TLS session 
 struct MbedTlsSession {
   mbedtls_ssl_context ssl;
   socket_t sock = INVALID_SOCKET;
@@ -17462,7 +17462,7 @@ inline int mbedtls_sni_callback(void *p_ctx, mbedtls_ssl_context *ssl,
 inline int mbedtls_verify_callback(void *data, mbedtls_x509_crt *crt,
                                    int cert_depth, uint32_t *flags);
 
-// MbedTLS verify callback wrapper
+// MbedTLS verify callback 
 inline int mbedtls_verify_callback(void *data, mbedtls_x509_crt *crt,
                                    int cert_depth, uint32_t *flags) {
   auto &callback = get_verify_callback();
@@ -18577,7 +18577,7 @@ namespace tls {
 
 namespace impl {
 
-// wolfSSL session wrapper
+// wolfSSL session 
 struct WolfSSLSession {
   WOLFSSL *ssl = nullptr;
   socket_t sock = INVALID_SOCKET;
@@ -18659,7 +18659,7 @@ inline int wolfssl_sni_callback(WOLFSSL *ssl, int *ret, void *exArg) {
   return 0; // Continue regardless
 }
 
-// wolfSSL verify callback wrapper
+// wolfSSL verify callback 
 inline int wolfssl_verify_callback(int preverify_ok,
                                    WOLFSSL_X509_STORE_CTX *x509_ctx) {
   auto &callback = get_verify_callback();
